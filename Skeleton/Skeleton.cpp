@@ -61,12 +61,22 @@ const char* const fragmentSource = R"(
 
 GPUProgram gpuProgram; // vertex and fragment shaders
 //unsigned int vao;	   // virtual world on the GPU
+const int nTesselatedVertices = 20;
 
 class Triangle {
 	unsigned int vao, vbo;	   // virtual world on the GPU
-
+	//int nTesselatedVertices = 20;
+	float radius = 0.2;
+	float circlePoints[nTesselatedVertices * 2];
 public:
-	Triangle() { }
+	Triangle() { 
+		for (int i = 0; i < nTesselatedVertices; i++) {
+			float phi = i * 2.0f * M_PI / nTesselatedVertices;
+			//circlePoints.push_back(vec2(cosf(phi), sinf(phi)));
+			circlePoints[2*i] = 0.5f + radius * cosf(phi);
+			circlePoints[2*i + 1] = 0.5f + radius * sinf(phi);
+		}
+	}
 
 	void create() {
 		glGenVertexArrays(1, &vao);	// get 1 vao id
@@ -76,16 +86,15 @@ public:
 		unsigned int vbo;
 		glGenBuffers(1, &vbo);	// Generate 1 buffer
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		// Geometry with 24 bytes (6 floats or 3 x 2 coordinates)
-		float vertices[] = { -0.8f, -0.8f, -0.6f, 1.0f, 0.8f, -0.2f };
+
 		glBufferData(GL_ARRAY_BUFFER, 	// Copy to GPU target
-			sizeof(vertices),  // # bytes
-			vertices,	      	// address
+			sizeof(circlePoints),  // # bytes
+			circlePoints,	      	// address
 			GL_STATIC_DRAW);	// we do not change later
 
 		glEnableVertexAttribArray(0);  // AttribArray 0
 		glVertexAttribPointer(0,       // vbo -> AttribArray 0
-			2, GL_FLOAT, GL_FALSE, // two floats/attrib, not fixed-point
+			2, GL_FLOAT, GL_FALSE, // two floats/attrib, not fixed-point		//A vbo-ban 40 float lesz, 2 float tartozik egy csúcsponthoz így glDrawArrays()-ben csak 20 pontot kell kirajzolni (count paraméter)
 			0, NULL); 		     // stride, offset: tightly packed
 	}
 
@@ -100,7 +109,7 @@ public:
 		gpuProgram.setUniform(MVPtransf, "MVP");
 
 		glBindVertexArray(vao);  // Draw call
-		glDrawArrays(GL_TRIANGLES, 0 /*startIdx*/, 3 /*# Elements*/);
+		glDrawArrays(GL_TRIANGLE_FAN, 0 /*startIdx*/, nTesselatedVertices /*# Elements*/);
 	}
 
 
