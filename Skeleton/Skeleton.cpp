@@ -121,15 +121,17 @@ public:
 
 class LineStrip {
 	unsigned int vao, vbo;	   // virtual world on the GPU
-	float points[2]; //a szakaszunk kezdo és végpontja
+	float points[4]; //a szakaszunk kezdo és végpontja
 	vec3 color;
 public:
 	LineStrip() { }
 
-	LineStrip(float startPoint, float endPoint, vec3 colorParam) {
+	LineStrip(vec2 startPoint, vec2 endPoint, vec3 colorParam) {
 		color = colorParam;
-		points[0] = startPoint;
-		points[1] = endPoint;
+		points[0] = startPoint.x;
+		points[1] = startPoint.y;
+		points[2] = endPoint.x;
+		points[3] = endPoint.y;
 
 	}
 
@@ -149,7 +151,7 @@ public:
 
 		glEnableVertexAttribArray(0);  // AttribArray 0
 		glVertexAttribPointer(0,       // vbo -> AttribArray 0
-			2, GL_FLOAT, GL_FALSE, // two floats/attrib, not fixed-point	
+			2, GL_FLOAT, GL_FALSE, // two floats/attrib, not fixed-point	//egy ponthoz 2 float tartozik
 			0, NULL); 		     // stride, offset: tightly packed
 	}
 
@@ -163,7 +165,7 @@ public:
 		gpuProgram.setUniform(MVPtransf, "MVP");
 
 		glBindVertexArray(vao);  // Draw call
-		glDrawArrays(GL_LINE_STRIP, 0 /*startIdx*/, 2 /*# Elements*/);
+		glDrawArrays(GL_LINE_STRIP, 0 /*startIdx*/, 2 /*# Elements*/);		//2 pontunk lesz amit össze kell kötni
 	}
 
 
@@ -174,17 +176,28 @@ const float fullness = 0.05f;			//a gráfunk lehetséges élei közül ennyi arányú a
 
 //ennyi él lesz ténylegesen berajzolva
 //numberOfVertices * (numberOfVertices - 1) / 2 * fullness;
-const int numberOfEdges = 50 * 49 / 2 * 0.05f;
+const int numberOfEdges = (50 * 49 / 2) * 0.05f;
 
 class Graph {
-	vec2 graphVerticesCoordinates[numberOfVertices];
-	vec2 graphEdges[numberOfEdges];
+	vec2 graphVerticesCoordinates[numberOfVertices];		// a gráfunk csúcspontjainak koordinátái
+	vec2 graphEdges[numberOfEdges * 2];						//a gráfunk élei, minden élhez 2 koordináta
 public:
 	Graph() {
+		//generáljuk le a csúcspontokat
 		for (int i = 0; i < numberOfVertices; i++) {
 			float x = generateRandomFloatBetween(-1.0f, 1.0f);
 			float y = generateRandomFloatBetween(-1.0f, 1.0f);
 			graphVerticesCoordinates[i] = vec2(x, y);
+		}
+		//generáljuk le az éleket
+		//random kiválasztunk 2 csúcspontot a sorszámaikkal a gráf csúcsai közül, és ezek koordinátái lesznek a szakaszunk két végpontja
+		for (int i = 0; i < numberOfEdges; i++) {
+			int startPoint = rand() % numberOfVertices + 1;
+			int endPoint = rand() % numberOfVertices + 1;
+			graphEdges[i * 2].x = graphVerticesCoordinates[startPoint].x;
+			graphEdges[i * 2].y = graphVerticesCoordinates[startPoint].y;
+			graphEdges[i * 2 + 1].x = graphVerticesCoordinates[endPoint].x;
+			graphEdges[i * 2 + 1].y = graphVerticesCoordinates[endPoint].y;
 		}
 	}
 
@@ -199,25 +212,35 @@ public:
 			circle.create();
 			circle.Draw();
 		}
+
+		LineStrip lineStrip;
+		for (int i = 0; i < numberOfEdges; i++) {
+			vec2 startPoint(graphEdges[2 * i].x, graphEdges[2 * i].y);
+			vec2 endPoint(graphEdges[2 * i + 1].x, graphEdges[2 * i + 1].y);
+			lineStrip = LineStrip(startPoint, endPoint, vec3(0, 1, 0));
+			lineStrip.create();
+			lineStrip.Draw();
+		}
+
 	}
 };
 
 //Circle circle =  Circle(0.5f, 0.5f, vec3(0.0f, 1.0f, 0.0f));
 //Circle circle2 = Circle(0.0f, 0.0f, vec3(0.5f, 0.5f, 0.5f));
-LineStrip lineStrip;
+//LineStrip lineStrip;
 Graph graph;
 
 // Initialization, create an OpenGL context
 void onInitialization() {
 	glViewport(0, 0, windowWidth, windowHeight);
-	glLineWidth(5.0f); // Width of lines in pixels
+	glLineWidth(2.0f); // Width of lines in pixels
 
 	//circle.create();
 	//circle2.create();
 	graph = Graph();
 
-	lineStrip = LineStrip(0.2f, -0.5f, vec3(0, 1, 0));
-	lineStrip.create();
+	//lineStrip = LineStrip(0.2f, -0.5f, vec3(0, 1, 0));
+	//lineStrip.create();
 
 	// create program for the GPU
 	gpuProgram.create(vertexSource, fragmentSource, "outColor");
@@ -231,7 +254,7 @@ void onDisplay() {
 	//circle.Draw();
 	//circle2.Draw();
 	graph.Draw();
-	lineStrip.Draw();
+	//lineStrip.Draw();
 
 	glutSwapBuffers(); // exchange buffers for double buffering
 }
