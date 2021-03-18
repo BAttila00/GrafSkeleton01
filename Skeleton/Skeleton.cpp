@@ -63,18 +63,20 @@ GPUProgram gpuProgram; // vertex and fragment shaders
 //unsigned int vao;	   // virtual world on the GPU
 const int nTesselatedVertices = 20;
 
-class Triangle {
+class Circle {
 	unsigned int vao, vbo;	   // virtual world on the GPU
 	//int nTesselatedVertices = 20;
 	float radius = 0.2;
 	float circlePoints[nTesselatedVertices * 2];
+	vec3 color;
 public:
-	Triangle() { 
+	Circle(float midPointX, float midPointY, vec3 colorParam) {
+		color = colorParam;
 		for (int i = 0; i < nTesselatedVertices; i++) {
 			float phi = i * 2.0f * M_PI / nTesselatedVertices;
 			//circlePoints.push_back(vec2(cosf(phi), sinf(phi)));
-			circlePoints[2*i] = 0.5f + radius * cosf(phi);
-			circlePoints[2*i + 1] = 0.5f + radius * sinf(phi);
+			circlePoints[2*i] = midPointX + radius * cosf(phi);
+			circlePoints[2*i + 1] = midPointY + radius * sinf(phi);
 		}
 	}
 
@@ -99,7 +101,6 @@ public:
 	}
 
 	void draw() {
-		vec3 color = vec3(0.0f, 1.0f, 0.0f);
 		gpuProgram.setUniform(color, "color");
 
 		mat4 MVPtransf(1, 0, 0, 0,
@@ -115,14 +116,16 @@ public:
 
 };
 
-Triangle triangle;
+Circle circle =  Circle(0.5f, 0.5f, vec3(0.0f, 1.0f, 0.0f));
+Circle circle2 = Circle(0.0f, 0.0f, vec3(0.5f, 0.5f, 0.5f));
 
 // Initialization, create an OpenGL context
 void onInitialization() {
 	glViewport(0, 0, windowWidth, windowHeight);
 	glLineWidth(2.0f); // Width of lines in pixels
 
-	triangle.create();
+	circle.create();
+	circle2.create();
 
 	// create program for the GPU
 	gpuProgram.create(vertexSource, fragmentSource, "outColor");
@@ -133,7 +136,8 @@ void onDisplay() {
 	glClearColor(0, 0, 0, 0);     // background color
 	glClear(GL_COLOR_BUFFER_BIT); // clear frame buffer
 
-	triangle.draw();
+	circle.draw();
+	circle2.draw();
 
 	glutSwapBuffers(); // exchange buffers for double buffering
 }
