@@ -206,12 +206,6 @@ public:
 	}
 
 	void Draw() {
-		Circle circle;
-		for (int i = 0; i < numberOfVertices; i++) {
-			circle = Circle(graphVerticesCoordinates[i].x, graphVerticesCoordinates[i].y, vec3(0.5f, 0.5f, 0.5f));
-			circle.create();
-			circle.Draw();
-		}
 
 		LineStrip lineStrip;
 		for (int i = 0; i < numberOfEdges; i++) {
@@ -220,6 +214,13 @@ public:
 			lineStrip = LineStrip(startPoint, endPoint, vec3(0, 1, 0));
 			lineStrip.create();
 			lineStrip.Draw();
+		}
+
+		Circle circle;
+		for (int i = 0; i < numberOfVertices; i++) {
+			circle = Circle(graphVerticesCoordinates[i].x, graphVerticesCoordinates[i].y, vec3(0.5f, 0.5f, 0.5f));
+			circle.create();
+			circle.Draw();
 		}
 
 	}
