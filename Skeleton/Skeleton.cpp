@@ -89,7 +89,6 @@ public:
 		glBindVertexArray(vao);		// make it active
 
 
-		unsigned int vbo;
 		glGenBuffers(1, &vbo);	// Generate 1 buffer
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
