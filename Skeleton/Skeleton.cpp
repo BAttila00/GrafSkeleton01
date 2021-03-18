@@ -61,15 +61,19 @@ const char* const fragmentSource = R"(
 
 GPUProgram gpuProgram; // vertex and fragment shaders
 //unsigned int vao;	   // virtual world on the GPU
-const int nTesselatedVertices = 20;
+
+const int nTesselatedVertices = 20;		//ennyi szakaszból rajzoljuk meg a görbéinket (pl kör)
 
 class Circle {
 	unsigned int vao, vbo;	   // virtual world on the GPU
 	//int nTesselatedVertices = 20;
-	float radius = 0.2;
+
+	float radius = 0.02;
 	float circlePoints[nTesselatedVertices * 2];
 	vec3 color;
 public:
+	Circle() { }
+
 	Circle(float midPointX, float midPointY, vec3 colorParam) {
 		color = colorParam;
 		for (int i = 0; i < nTesselatedVertices; i++) {
@@ -100,7 +104,7 @@ public:
 			0, NULL); 		     // stride, offset: tightly packed
 	}
 
-	void draw() {
+	void Draw() {
 		gpuProgram.setUniform(color, "color");
 
 		mat4 MVPtransf(1, 0, 0, 0,
@@ -116,16 +120,51 @@ public:
 
 };
 
-Circle circle =  Circle(0.5f, 0.5f, vec3(0.0f, 1.0f, 0.0f));
-Circle circle2 = Circle(0.0f, 0.0f, vec3(0.5f, 0.5f, 0.5f));
+const int numberOfVertices = 50;		//a gráfunk csúcspontjainak száma
+const float fullness = 0.05f;			//a gráfunk lehetséges élei közül ennyi arányú a tényleges élek száma
+
+//ennyi él lesz ténylegesen berajzolva
+//numberOfVertices * (numberOfVertices - 1) / 2 * fullness;
+const int numberOfEdges = 50 * 49 / 2 * 0.05f;
+
+class Graph {
+	vec2 graphVerticesCoordinates[numberOfVertices];
+	vec2 graphEdges[numberOfEdges];
+public:
+	Graph() {
+		for (int i = 0; i < numberOfVertices; i++) {
+			float x = generateRandomFloatBetween(-1.0f, 1.0f);
+			float y = generateRandomFloatBetween(-1.0f, 1.0f);
+			graphVerticesCoordinates[i] = vec2(x, y);
+		}
+	}
+
+	float generateRandomFloatBetween(float from, float to) {
+		return from + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (to - from)));
+	}
+
+	void Draw() {
+		Circle circle;
+		for (int i = 0; i < numberOfVertices; i++) {
+			circle = Circle(graphVerticesCoordinates[i].x, graphVerticesCoordinates[i].y, vec3(0.5f, 0.5f, 0.5f));
+			circle.create();
+			circle.Draw();
+		}
+	}
+};
+
+//Circle circle =  Circle(0.5f, 0.5f, vec3(0.0f, 1.0f, 0.0f));
+//Circle circle2 = Circle(0.0f, 0.0f, vec3(0.5f, 0.5f, 0.5f));
+Graph graph;
 
 // Initialization, create an OpenGL context
 void onInitialization() {
 	glViewport(0, 0, windowWidth, windowHeight);
 	glLineWidth(2.0f); // Width of lines in pixels
 
-	circle.create();
-	circle2.create();
+	//circle.create();
+	//circle2.create();
+	graph = Graph();
 
 	// create program for the GPU
 	gpuProgram.create(vertexSource, fragmentSource, "outColor");
@@ -136,8 +175,9 @@ void onDisplay() {
 	glClearColor(0, 0, 0, 0);     // background color
 	glClear(GL_COLOR_BUFFER_BIT); // clear frame buffer
 
-	circle.draw();
-	circle2.draw();
+	//circle.Draw();
+	//circle2.Draw();
+	graph.Draw();
 
 	glutSwapBuffers(); // exchange buffers for double buffering
 }
