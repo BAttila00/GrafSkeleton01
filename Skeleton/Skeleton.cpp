@@ -119,6 +119,56 @@ public:
 
 };
 
+class LineStrip {
+	unsigned int vao, vbo;	   // virtual world on the GPU
+	float points[2]; //a szakaszunk kezdo és végpontja
+	vec3 color;
+public:
+	LineStrip() { }
+
+	LineStrip(float startPoint, float endPoint, vec3 colorParam) {
+		color = colorParam;
+		points[0] = startPoint;
+		points[1] = endPoint;
+
+	}
+
+	void create() {
+		glGenVertexArrays(1, &vao);	// get 1 vao id
+		glBindVertexArray(vao);		// make it active
+
+
+		//unsigned int vbo;
+		glGenBuffers(1, &vbo);	// Generate 1 buffer
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+		glBufferData(GL_ARRAY_BUFFER, 	// Copy to GPU target
+			sizeof(points),  // # bytes
+			points,	      	// address
+			GL_STATIC_DRAW);	// we do not change later
+
+		glEnableVertexAttribArray(0);  // AttribArray 0
+		glVertexAttribPointer(0,       // vbo -> AttribArray 0
+			2, GL_FLOAT, GL_FALSE, // two floats/attrib, not fixed-point	
+			0, NULL); 		     // stride, offset: tightly packed
+	}
+
+	void Draw() {
+		gpuProgram.setUniform(color, "color");
+
+		mat4 MVPtransf(1, 0, 0, 0,
+			0, 1, 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1);
+		gpuProgram.setUniform(MVPtransf, "MVP");
+
+		glBindVertexArray(vao);  // Draw call
+		glDrawArrays(GL_LINE_STRIP, 0 /*startIdx*/, 2 /*# Elements*/);
+	}
+
+
+};
+
 const int numberOfVertices = 50;		//a gráfunk csúcspontjainak száma
 const float fullness = 0.05f;			//a gráfunk lehetséges élei közül ennyi arányú a tényleges élek száma
 
@@ -154,16 +204,20 @@ public:
 
 //Circle circle =  Circle(0.5f, 0.5f, vec3(0.0f, 1.0f, 0.0f));
 //Circle circle2 = Circle(0.0f, 0.0f, vec3(0.5f, 0.5f, 0.5f));
+LineStrip lineStrip;
 Graph graph;
 
 // Initialization, create an OpenGL context
 void onInitialization() {
 	glViewport(0, 0, windowWidth, windowHeight);
-	glLineWidth(2.0f); // Width of lines in pixels
+	glLineWidth(5.0f); // Width of lines in pixels
 
 	//circle.create();
 	//circle2.create();
 	graph = Graph();
+
+	lineStrip = LineStrip(0.2f, -0.5f, vec3(0, 1, 0));
+	lineStrip.create();
 
 	// create program for the GPU
 	gpuProgram.create(vertexSource, fragmentSource, "outColor");
@@ -177,6 +231,7 @@ void onDisplay() {
 	//circle.Draw();
 	//circle2.Draw();
 	graph.Draw();
+	lineStrip.Draw();
 
 	glutSwapBuffers(); // exchange buffers for double buffering
 }
