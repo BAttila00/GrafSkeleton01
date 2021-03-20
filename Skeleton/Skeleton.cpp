@@ -288,12 +288,14 @@ public:
 
 	void Draw() {
 
-		int width = 128, height = 128;				// create checkerboard texture procedurally
+		int width = 2, height = 2;				//ez bármekkora szám lehetne (minél nagyobb annál "hirtelenebb" lesz a színátmenet)
 		std::vector<vec4> image(width * height);
-		for (int y = 0; y < height; y++) {
-			for (int x = 0; x < width; x++) {
-				float luminance = ((x / 16) % 2) ^ ((y / 16) % 2);
-				image[y * width + x] = vec4(luminance, luminance, luminance, 1);
+		for (int i = 0; i < width * height; i++) {
+			if (i % height < (height/2)) {
+				image[i] = vec4(1.0f, 0.0f, 0.0f, 1);
+			}
+			else {
+				image[i] = vec4(0.0f, 0.0f, 1.0f, 1);
 			}
 		}
 		quad = new TexturedQuad(width, height, image);
