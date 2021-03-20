@@ -254,6 +254,24 @@ public:
 
 };
 
+class GraphNode {
+	int id;
+	std::vector<int> adjacentNodes;
+public:
+	GraphNode() { }
+
+	float x, y;
+	GraphNode(int idParam, float xParam, float yParam) {
+		id = idParam;
+		x = xParam;
+		y = yParam;
+	}
+
+	void addAdjacentNode(int id) {
+		adjacentNodes.push_back(id);
+	}
+};
+
 const int numberOfVertices = 50;		//a gráfunk csúcspontjainak száma
 const float fullness = 0.05f;			//a gráfunk lehetséges élei közül ennyi arányú a tényleges élek száma
 
@@ -263,7 +281,7 @@ const int numberOfEdges = (50 * 49 / 2) * 0.05f;
 TexturedQuad* quad;
 
 class Graph {
-	vec2 graphVerticesCoordinates[numberOfVertices];		// a gráfunk csúcspontjainak koordinátái
+	GraphNode graphVertices[numberOfVertices];		// a gráfunk csúcspontjainak koordinátái
 	vec2 graphEdges[numberOfEdges * 2];						//a gráfunk élei, minden élhez 2 koordináta
 public:
 	Graph() {
@@ -271,17 +289,19 @@ public:
 		for (int i = 0; i < numberOfVertices; i++) {
 			float x = generateRandomFloatBetween(-1.0f, 1.0f);
 			float y = generateRandomFloatBetween(-1.0f, 1.0f);
-			graphVerticesCoordinates[i] = vec2(x, y);
+			graphVertices[i] = GraphNode(i, x, y);
 		}
 		//generáljuk le az éleket
 		//random kiválasztunk 2 csúcspontot a sorszámaikkal a gráf csúcsai közül, és ezek koordinátái lesznek a szakaszunk két végpontja
 		for (int i = 0; i < numberOfEdges; i++) {
-			int startPoint = rand() % numberOfVertices + 1;
-			int endPoint = rand() % numberOfVertices + 1;
-			graphEdges[i * 2].x = graphVerticesCoordinates[startPoint].x;
-			graphEdges[i * 2].y = graphVerticesCoordinates[startPoint].y;
-			graphEdges[i * 2 + 1].x = graphVerticesCoordinates[endPoint].x;
-			graphEdges[i * 2 + 1].y = graphVerticesCoordinates[endPoint].y;
+			int startPoint = rand() % numberOfVertices;
+			int endPoint = rand() % numberOfVertices;
+			graphEdges[i * 2].x = graphVertices[startPoint].x;
+			graphEdges[i * 2].y = graphVertices[startPoint].y;
+			graphEdges[i * 2 + 1].x = graphVertices[endPoint].x;
+			graphEdges[i * 2 + 1].y = graphVertices[endPoint].y;
+			graphVertices[startPoint].addAdjacentNode(endPoint);
+			graphVertices[endPoint].addAdjacentNode(startPoint);
 		}
 	}
 
@@ -303,7 +323,7 @@ public:
 
 		Circle circle;
 		for (int i = 0; i < numberOfVertices; i++) {
-			circle = Circle(graphVerticesCoordinates[i].x, graphVerticesCoordinates[i].y, vec3(0.0f, 1.0f, 0.0f));
+			circle = Circle(graphVertices[i].x, graphVertices[i].y, vec3(0.0f, 1.0f, 0.0f));
 			circle.create();
 			circle.Draw();
 		}
@@ -323,7 +343,7 @@ public:
 					image[i] = vec4(1.0f - k * steps*0.75f, 1.0f - k * steps, 0.0f + k * steps*0.9f, 1);
 				}
 			}
-			quad = new TexturedQuad(vec2(graphVerticesCoordinates[k].x, graphVerticesCoordinates[k].y), width, height, image);
+			quad = new TexturedQuad(vec2(graphVertices[k].x, graphVertices[k].y), width, height, image);
 			quad->Draw();
 		}
 
