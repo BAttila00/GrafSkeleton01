@@ -102,7 +102,7 @@ class Circle {
 	unsigned int vao, vbo;	   // virtual world on the GPU
 	//int nTesselatedVertices = 20;
 
-	float radius = 0.02;
+	float radius = 0.04;
 	float circlePoints[nTesselatedVertices * 2];
 	vec3 color;
 public:
@@ -209,14 +209,17 @@ class TexturedQuad {
 	unsigned int vao, vbo[2];
 	vec2 vertices[4], uvs[4];
 	Texture texture;
+	const float size = 0.025;
+	vec2 midPoint;
 public:
 	TexturedQuad() { }
 
-	TexturedQuad(int width, int height, const std::vector<vec4>& image) : texture(width, height, image) {
-		vertices[0] = vec2(-0.5f, -0.5f); uvs[0] = vec2(0, 0);
-		vertices[1] = vec2(0.5f, -0.5f);  uvs[1] = vec2(1, 0);
-		vertices[2] = vec2(0.5f, 0.5f);   uvs[2] = vec2(1, 1);
-		vertices[3] = vec2(-0.5f, 0.5f);  uvs[3] = vec2(0, 1);
+	TexturedQuad(vec2 midPointParam, int width, int height, const std::vector<vec4>& image) : texture(width, height, image) {
+		midPoint = midPointParam;
+		vertices[0] = vec2(midPoint.x - size, midPoint.x - size); uvs[0] = vec2(0, 0);
+		vertices[1] = vec2(midPoint.x + size, midPoint.x - size);  uvs[1] = vec2(1, 0);
+		vertices[2] = vec2(midPoint.x + size, midPoint.x + size);   uvs[2] = vec2(1, 1);
+		vertices[3] = vec2(midPoint.x - size, midPoint.x + size);  uvs[3] = vec2(0, 1);
 
 		glGenVertexArrays(1, &vao);	// create 1 vertex array object
 		glBindVertexArray(vao);		// make it active
@@ -298,7 +301,7 @@ public:
 				image[i] = vec4(0.0f, 0.0f, 1.0f, 1);
 			}
 		}
-		quad = new TexturedQuad(width, height, image);
+		quad = new TexturedQuad(vec2(0.5f, 0.5f), width, height, image);
 		gpuProgramForTexturing.Use();
 		quad->Draw();
 
