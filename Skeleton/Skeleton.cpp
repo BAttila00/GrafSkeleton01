@@ -309,16 +309,16 @@ public:
 		}
 
 		gpuProgramForTexturing.Use();
-		int width = 128, height = 128;				//ez bármekkora szám lehetne (minél nagyobb annál "hirtelenebb" lesz a színátmenet)
+		int width = 32, height = 32;				//ez bármekkora szám lehetne (minél nagyobb annál "hirtelenebb" lesz a színátmenet)
 		std::vector<vec4> image(width * height);
 		float steps = 1.0f / numberOfVertices;		//a textúra színeihez használjuk, ennyivel fogjuk változtatni a színek értékeit
 		for (int k = 0; k < numberOfVertices; k++) {
 			for (int i = 0; i < width * height; i++) {
 				if (i % height < (height / 2)) {
-					image[i] = vec4(0.0f + k * steps, 0.0f, 1.0f - k * steps, 1);
+					image[i] = vec4(1.0f - k * steps, 0.0f + k * steps, 0.0f + k * steps, 1);
 				}
 				else {
-					image[i] = vec4(0.0f, 0.0f + k * steps, 0.7f, 1);
+					image[i] = vec4(0.0f + k * steps, 1.0f - k * steps, 0.0f + k * steps, 1);
 				}
 			}
 			quad = new TexturedQuad(vec2(graphVerticesCoordinates[k].x, graphVerticesCoordinates[k].y), width, height, image);
