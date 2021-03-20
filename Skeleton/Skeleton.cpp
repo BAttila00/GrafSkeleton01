@@ -59,7 +59,41 @@ const char* const fragmentSource = R"(
 	}
 )";
 
+// vertex shader in GLSL
+const char* vertexSourceForTexturing = R"(
+	#version 330
+    precision highp float;
+
+	uniform mat4 MVP;			// Model-View-Projection matrix in row-major format
+
+	layout(location = 0) in vec2 vertexPosition;	// Attrib Array 0
+	layout(location = 1) in vec2 vertexUV;			// Attrib Array 1
+
+	out vec2 texCoord;								// output attribute
+
+	void main() {
+		texCoord = vertexUV;														// copy texture coordinates
+		gl_Position = vec4(vertexPosition.x, vertexPosition.y, 0, 1) * MVP; 		// transform to clipping space
+	}
+)";
+
+// fragment shader in GLSL
+const char* fragmentSourceForTexturing = R"(
+	#version 330
+    precision highp float;
+
+	uniform sampler2D textureUnit;
+
+	in vec2 texCoord;			// variable input: interpolated texture coordinates
+	out vec4 fragmentColor;		// output that goes to the raster memory as told by glBindFragDataLocation
+
+	void main() {
+		fragmentColor = texture(textureUnit, texCoord);
+	}
+)";
+
 GPUProgram gpuProgram; // vertex and fragment shaders
+GPUProgram gpuProgramForTexturing;
 //unsigned int vao;	   // virtual world on the GPU
 
 const int nTesselatedVertices = 20;		//ennyi szakaszból rajzoljuk meg a görbéinket (pl kör)
@@ -171,12 +205,59 @@ public:
 
 };
 
+class TexturedQuad {
+	unsigned int vao, vbo[2];
+	vec2 vertices[4], uvs[4];
+	Texture texture;
+public:
+	TexturedQuad() { }
+
+	TexturedQuad(int width, int height, const std::vector<vec4>& image) : texture(width, height, image) {
+		vertices[0] = vec2(-0.5f, -0.5f); uvs[0] = vec2(0, 0);
+		vertices[1] = vec2(0.5f, -0.5f);  uvs[1] = vec2(1, 0);
+		vertices[2] = vec2(0.5f, 0.5f);   uvs[2] = vec2(1, 1);
+		vertices[3] = vec2(-0.5f, 0.5f);  uvs[3] = vec2(0, 1);
+
+		glGenVertexArrays(1, &vao);	// create 1 vertex array object
+		glBindVertexArray(vao);		// make it active
+
+		glGenBuffers(2, vbo);	// Generate 1 vertex buffer objects
+
+		// vertex coordinates: vbo[0] -> Attrib Array 0 -> vertexPosition of the vertex shader
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]); // make it active, it is an array
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, NULL);     // stride and offset: it is tightly packed
+
+		// vertex coordinates: vbo[1] -> Attrib Array 1 -> vertexUV of the vertex shader
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]); // make it active, it is an array
+		glBufferData(GL_ARRAY_BUFFER, sizeof(uvs), uvs, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, NULL);     // stride and offset: it is tightly packed		
+	}
+
+	void Draw() {
+
+		mat4 MVPtransf(1, 0, 0, 0,
+			0, 1, 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1);
+		gpuProgramForTexturing.setUniform(MVPtransf, "MVP");
+		gpuProgramForTexturing.setUniform(texture, "textureUnit");
+
+		glBindVertexArray(vao);	// make the vao and its vbos active playing the role of the data source
+		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);	// draw two triangles forming a quad
+	}
+
+};
+
 const int numberOfVertices = 50;		//a gráfunk csúcspontjainak száma
 const float fullness = 0.05f;			//a gráfunk lehetséges élei közül ennyi arányú a tényleges élek száma
 
 //ennyi él lesz ténylegesen berajzolva
 //numberOfVertices * (numberOfVertices - 1) / 2 * fullness;
 const int numberOfEdges = (50 * 49 / 2) * 0.05f;
+TexturedQuad* quad;
 
 class Graph {
 	vec2 graphVerticesCoordinates[numberOfVertices];		// a gráfunk csúcspontjainak koordinátái
@@ -207,6 +288,19 @@ public:
 
 	void Draw() {
 
+		int width = 128, height = 128;				// create checkerboard texture procedurally
+		std::vector<vec4> image(width * height);
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x++) {
+				float luminance = ((x / 16) % 2) ^ ((y / 16) % 2);
+				image[y * width + x] = vec4(luminance, luminance, luminance, 1);
+			}
+		}
+		quad = new TexturedQuad(width, height, image);
+		gpuProgramForTexturing.Use();
+		quad->Draw();
+
+		gpuProgram.Use();
 		LineStrip lineStrip;
 		for (int i = 0; i < numberOfEdges; i++) {
 			vec2 startPoint(graphEdges[2 * i].x, graphEdges[2 * i].y);
@@ -245,6 +339,7 @@ void onInitialization() {
 
 	// create program for the GPU
 	gpuProgram.create(vertexSource, fragmentSource, "outColor");
+	gpuProgramForTexturing.create(vertexSourceForTexturing, fragmentSourceForTexturing, "fragmentColor");
 }
 
 // Window has become invalid: Redraw
