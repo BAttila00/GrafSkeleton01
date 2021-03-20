@@ -288,7 +288,7 @@ public:
 
 	void Draw() {
 
-		int width = 2, height = 2;				//ez bármekkora szám lehetne (minél nagyobb annál "hirtelenebb" lesz a színátmenet)
+		int width = 128, height = 128;				//ez bármekkora szám lehetne (minél nagyobb annál "hirtelenebb" lesz a színátmenet)
 		std::vector<vec4> image(width * height);
 		for (int i = 0; i < width * height; i++) {
 			if (i % height < (height/2)) {
