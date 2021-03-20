@@ -296,7 +296,7 @@ public:
 		for (int i = 0; i < numberOfEdges; i++) {
 			vec2 startPoint(graphEdges[2 * i].x, graphEdges[2 * i].y);
 			vec2 endPoint(graphEdges[2 * i + 1].x, graphEdges[2 * i + 1].y);
-			lineStrip = LineStrip(startPoint, endPoint, vec3(0, 1, 0));
+			lineStrip = LineStrip(startPoint, endPoint, vec3(1, 1, 0));
 			lineStrip.create();
 			lineStrip.Draw();
 		}
@@ -313,6 +313,8 @@ public:
 		std::vector<vec4> image(width * height);
 		float steps = 1.0f / numberOfVertices;		//a textúra színeihez használjuk, ennyivel fogjuk változtatni a színek értékeit
 		for (int k = 0; k < numberOfVertices; k++) {
+			//bal oldaluk: 1,0,0 (azaz piros), ebböl megy át fokozatosan 0,1,1-be (azaz türkiz)
+			//jobb oldaluk 0,1,0 (azaz zöld), ebbol megy át 1,0,1-be (azaz lila)
 			for (int i = 0; i < width * height; i++) {
 				if (i % height < (height / 2)) {
 					image[i] = vec4(1.0f - k * steps, 0.0f + k * steps, 0.0f + k * steps, 1);
