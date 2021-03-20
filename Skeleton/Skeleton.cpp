@@ -303,7 +303,7 @@ public:
 
 		Circle circle;
 		for (int i = 0; i < numberOfVertices; i++) {
-			circle = Circle(graphVerticesCoordinates[i].x, graphVerticesCoordinates[i].y, vec3(0.5f, 0.5f, 0.5f));
+			circle = Circle(graphVerticesCoordinates[i].x, graphVerticesCoordinates[i].y, vec3(0.0f, 1.0f, 0.0f));
 			circle.create();
 			circle.Draw();
 		}
@@ -314,13 +314,13 @@ public:
 		float steps = 1.0f / numberOfVertices;		//a textúra színeihez használjuk, ennyivel fogjuk változtatni a színek értékeit
 		for (int k = 0; k < numberOfVertices; k++) {
 			//bal oldaluk: 1,0,0 (azaz piros), ebböl megy át fokozatosan 0,1,1-be (azaz türkiz)
-			//jobb oldaluk 0,1,0 (azaz zöld), ebbol megy át 1,0,1-be (azaz lila)
+			//jobb oldaluk 1,1,0 (azaz sárga), ebbol megy át 0,0,1-be (azaz lila)
 			for (int i = 0; i < width * height; i++) {
 				if (i % height < (height / 2)) {
-					image[i] = vec4(1.0f - k * steps, 0.0f + k * steps, 0.0f + k * steps, 1);
+					image[i] = vec4(1.0f - k * steps*0.8f, 0.0f + k * steps*0.6f, 0.0f + k * steps*0.7, 1);
 				}
 				else {
-					image[i] = vec4(0.0f + k * steps, 1.0f - k * steps, 0.0f + k * steps, 1);
+					image[i] = vec4(1.0f - k * steps*0.75f, 1.0f - k * steps, 0.0f + k * steps*0.9f, 1);
 				}
 			}
 			quad = new TexturedQuad(vec2(graphVerticesCoordinates[k].x, graphVerticesCoordinates[k].y), width, height, image);
