@@ -216,10 +216,10 @@ public:
 
 	TexturedQuad(vec2 midPointParam, int width, int height, const std::vector<vec4>& image) : texture(width, height, image) {
 		midPoint = midPointParam;
-		vertices[0] = vec2(midPoint.x - size, midPoint.x - size); uvs[0] = vec2(0, 0);
-		vertices[1] = vec2(midPoint.x + size, midPoint.x - size);  uvs[1] = vec2(1, 0);
-		vertices[2] = vec2(midPoint.x + size, midPoint.x + size);   uvs[2] = vec2(1, 1);
-		vertices[3] = vec2(midPoint.x - size, midPoint.x + size);  uvs[3] = vec2(0, 1);
+		vertices[0] = vec2(midPoint.x - size, midPoint.y - size); uvs[0] = vec2(0, 0);
+		vertices[1] = vec2(midPoint.x + size, midPoint.y - size);  uvs[1] = vec2(1, 0);
+		vertices[2] = vec2(midPoint.x + size, midPoint.y + size);   uvs[2] = vec2(1, 1);
+		vertices[3] = vec2(midPoint.x - size, midPoint.y + size);  uvs[3] = vec2(0, 1);
 
 		glGenVertexArrays(1, &vao);	// create 1 vertex array object
 		glBindVertexArray(vao);		// make it active
@@ -291,20 +291,6 @@ public:
 
 	void Draw() {
 
-		int width = 128, height = 128;				//ez bármekkora szám lehetne (minél nagyobb annál "hirtelenebb" lesz a színátmenet)
-		std::vector<vec4> image(width * height);
-		for (int i = 0; i < width * height; i++) {
-			if (i % height < (height/2)) {
-				image[i] = vec4(1.0f, 0.0f, 0.0f, 1);
-			}
-			else {
-				image[i] = vec4(0.0f, 0.0f, 1.0f, 1);
-			}
-		}
-		quad = new TexturedQuad(vec2(0.5f, 0.5f), width, height, image);
-		gpuProgramForTexturing.Use();
-		quad->Draw();
-
 		gpuProgram.Use();
 		LineStrip lineStrip;
 		for (int i = 0; i < numberOfEdges; i++) {
@@ -320,6 +306,23 @@ public:
 			circle = Circle(graphVerticesCoordinates[i].x, graphVerticesCoordinates[i].y, vec3(0.5f, 0.5f, 0.5f));
 			circle.create();
 			circle.Draw();
+		}
+
+		gpuProgramForTexturing.Use();
+		int width = 128, height = 128;				//ez bármekkora szám lehetne (minél nagyobb annál "hirtelenebb" lesz a színátmenet)
+		std::vector<vec4> image(width * height);
+		float steps = 1.0f / numberOfVertices;		//a textúra színeihez használjuk, ennyivel fogjuk változtatni a színek értékeit
+		for (int k = 0; k < numberOfVertices; k++) {
+			for (int i = 0; i < width * height; i++) {
+				if (i % height < (height / 2)) {
+					image[i] = vec4(0.0f + k * steps, 0.0f, 1.0f - k * steps, 1);
+				}
+				else {
+					image[i] = vec4(0.0f, 0.0f + k * steps, 0.7f, 1);
+				}
+			}
+			quad = new TexturedQuad(vec2(graphVerticesCoordinates[k].x, graphVerticesCoordinates[k].y), width, height, image);
+			quad->Draw();
 		}
 
 	}
