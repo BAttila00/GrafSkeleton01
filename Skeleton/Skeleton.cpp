@@ -92,6 +92,25 @@ const char* fragmentSourceForTexturing = R"(
 	}
 )";
 
+// 2D camera
+class Camera2D {
+	vec2 wCenter; // center in world coordinates (világkoordinátákban megadva !!!), w kezdobetu -> világkoordinátákban
+	vec2 wSize;   // width and height in world coordinates (világkoordinátákban megadva !!!), w kezdobetu -> világkoordinátákban
+public:
+	Camera2D() : wCenter(0, 0), wSize(200, 200) { }
+
+	mat4 V() { return TranslateMatrix(-wCenter); }		//normalizált eszközkoordináta rendszerbe való transzformáláshoz (a tanultak szerint)
+	mat4 P() { return ScaleMatrix(vec2(2 / wSize.x, 2 / wSize.y)); }	//normalizált eszközkoordináta rendszerbe való transzformáláshoz (a tanultak szerint)
+
+	mat4 Vinv() { return TranslateMatrix(wCenter); }	//V transzformáció inverze
+	mat4 Pinv() { return ScaleMatrix(vec2(wSize.x / 2, wSize.y / 2)); }		//P transzformáció inverze
+
+	void Zoom(float s) { wSize = wSize * s; }
+	void Pan(vec2 t) { wCenter = wCenter + t; }
+};
+
+Camera2D camera;		// 2D camera
+
 GPUProgram gpuProgram; // vertex and fragment shaders
 GPUProgram gpuProgramForTexturing;
 //unsigned int vao;	   // virtual world on the GPU
