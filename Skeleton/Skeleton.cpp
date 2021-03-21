@@ -94,10 +94,12 @@ const char* fragmentSourceForTexturing = R"(
 
 // 2D camera
 class Camera2D {
-	vec2 wCenter; // center in world coordinates (világkoordinátákban megadva !!!), w kezdobetu -> világkoordinátákban
-	vec2 wSize;   // width and height in world coordinates (világkoordinátákban megadva !!!), w kezdobetu -> világkoordinátákban
+	vec2 wCenter; // középpont világkoordinátákban (világkoordinátákban megadva !!!), w kezdobetu -> világkoordinátákban
+	vec2 wSize;   // szélesség és magasság világkoordinátákban (világkoordinátákban megadva !!!), w kezdobetu -> világkoordinátákban
 public:
-	Camera2D() : wCenter(0, 0), wSize(200, 200) { }
+	Camera2D() : wCenter(0, 0), wSize(2, 2) { }		//amennyiben 2,2- nek adjuk meg wSize-ot, akkor az objektumaink koordinátáit(pl kör, háromszög, linestrip stb)
+	//úgy kell felvenni mintha a normalizált eszközkoordináta rendszerben lennénk. Tehát ez az ablak (wSize) fog megfelelni a normalizált eszközkoordináta rendszerünknek
+	//Ha pl wSize = 200,200 akkor a (80, 80)-ban felvett pont a (0.8, 0,8) koordinátákra fog leképzödni.
 
 	mat4 V() { return TranslateMatrix(-wCenter); }		//normalizált eszközkoordináta rendszerbe való transzformáláshoz (a tanultak szerint)
 	mat4 P() { return ScaleMatrix(vec2(2 / wSize.x, 2 / wSize.y)); }	//normalizált eszközkoordináta rendszerbe való transzformáláshoz (a tanultak szerint)
@@ -124,10 +126,22 @@ class Circle {
 	float radius = 0.04;
 	float circlePoints[nTesselatedVertices * 2];
 	vec3 color;
+	float sx, sy;		// skálázás
+	vec2 wTranslate;	// eltolás
+	float phi;			// forgatás szöge
 public:
-	Circle() { }
+	Circle() {
+		sx = 1.0f;
+		sy = 1.0f;
+		wTranslate = vec2(0.0f, 0.0f);
+		phi = 0.0f;
+	}
 
 	Circle(float midPointX, float midPointY, vec3 colorParam) {
+		sx = 1.0f;
+		sy = 1.0f;
+		wTranslate = vec2(0.0f, 0.0f);
+		phi = 0.0f;
 		color = colorParam;
 		for (int i = 0; i < nTesselatedVertices; i++) {
 			float phi = i * 2.0f * M_PI / nTesselatedVertices;
@@ -156,13 +170,34 @@ public:
 			0, NULL); 		     // stride, offset: tightly packed
 	}
 
+	mat4 M() {
+		mat4 Mscale(sx, 0, 0, 0,
+			0, sy, 0, 0,
+			0, 0, 0, 0,
+			0, 0, 0, 1); // scaling
+
+		mat4 Mrotate(cosf(phi), sinf(phi), 0, 0,
+			-sinf(phi), cosf(phi), 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1); // rotation
+
+		mat4 Mtranslate(1, 0, 0, 0,
+			0, 1, 0, 0,
+			0, 0, 0, 0,
+			wTranslate.x, wTranslate.y, 0, 1); // translation
+
+		return Mscale * Mrotate * Mtranslate;	// model transformation
+	}
+
 	void Draw() {
 		gpuProgram.setUniform(color, "color");
 
-		mat4 MVPtransf(1, 0, 0, 0,
-			0, 1, 0, 0,
-			0, 0, 1, 0,
-			0, 0, 0, 1);
+		//mat4 MVPtransfasd(1, 0, 0, 0,
+		//	0, 1, 0, 0,
+		//	0, 0, 1, 0,
+		//	0, 0, 0, 1);
+
+		mat4 MVPtransf = M() * camera.V() * camera.P();
 		gpuProgram.setUniform(MVPtransf, "MVP");
 
 		glBindVertexArray(vao);  // Draw call
