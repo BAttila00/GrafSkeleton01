@@ -189,6 +189,9 @@ public:
 		return Mscale * Mrotate * Mtranslate;	// model transformation
 	}
 
+	//eltolás
+	void AddTranslation(vec2 wT) { wTranslate = wTranslate + wT; }
+
 	void Draw() {
 		gpuProgram.setUniform(color, "color");
 
@@ -337,6 +340,7 @@ TexturedQuad* quad;
 class Graph {
 	GraphNode graphVertices[numberOfVertices];		// a gráfunk csúcspontjainak koordinátái
 	vec2 graphEdges[numberOfEdges * 2];						//a gráfunk élei, minden élhez 2 koordináta
+	std::vector<Circle> circles;
 public:
 	Graph() {
 		//generáljuk le a csúcspontokat
@@ -359,8 +363,23 @@ public:
 		}
 	}
 
+	void create() {
+		Circle circle;
+		for (int i = 0; i < numberOfVertices; i++) {
+			circle = Circle(graphVertices[i].x, graphVertices[i].y, vec3(0.0f, 1.0f, 0.0f));
+			circle.create();
+			circles.push_back(circle);
+		}
+	}
+
 	float generateRandomFloatBetween(float from, float to) {
 		return from + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (to - from)));
+	}
+
+	void AddTranslation(vec2 wT) { 
+		for (int i = 0; i < numberOfVertices; i++) {
+			circles[i].AddTranslation(wT);
+		}
 	}
 
 	void Draw() {
@@ -375,11 +394,8 @@ public:
 			lineStrip.Draw();
 		}
 
-		Circle circle;
 		for (int i = 0; i < numberOfVertices; i++) {
-			circle = Circle(graphVertices[i].x, graphVertices[i].y, vec3(0.0f, 1.0f, 0.0f));
-			circle.create();
-			circle.Draw();
+			circles[i].Draw();
 		}
 
 		gpuProgramForTexturing.Use();
@@ -417,6 +433,7 @@ void onInitialization() {
 	//circle.create();
 	//circle2.create();
 	graph = Graph();
+	graph.create();
 
 	//lineStrip = LineStrip(0.2f, -0.5f, vec3(0, 1, 0));
 	//lineStrip.create();
@@ -443,6 +460,11 @@ void onDisplay() {
 void onKeyboard(unsigned char key, int pX, int pY) {
 	if (key == 'd') glutPostRedisplay();         // if d, invalidate display, i.e. redraw
 												//ervenytelenitjuk az alkalmazoi ablakot -> ujrarajzolas
+
+	if (key == 'a') {
+		graph.AddTranslation(vec2(0.05f, 0.0f));
+		glutPostRedisplay();
+	}
 }
 
 // Key of ASCII code released
