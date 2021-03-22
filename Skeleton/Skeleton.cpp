@@ -340,6 +340,7 @@ class Graph {
 	GraphNode graphVertices[numberOfVertices];		// a gráfunk csúcspontjainak koordinátái
 	vec2 graphEdges[numberOfEdges * 2];						//a gráfunk élei, minden élhez 2 koordináta
 	std::vector<Circle> circles;
+	std::vector<LineStrip> lineStrips;
 	TexturedQuad* quads[numberOfVertices];
 public:
 	Graph() {
@@ -370,34 +371,17 @@ public:
 			circle.create();
 			circles.push_back(circle);
 		}
-	}
 
-	float generateRandomFloatBetween(float from, float to) {
-		return from + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (to - from)));
-	}
-
-	void AddTranslation(vec2 wT) { 
-		for (int i = 0; i < numberOfVertices; i++) {
-			circles[i].AddTranslation(wT);
-		}
-	}
-
-	void Draw() {
-
-		gpuProgram.Use();
-		LineStrip lineStrip;
+		LineStrip lineStrip;		//élek létrehozása
 		for (int i = 0; i < numberOfEdges; i++) {
 			vec2 startPoint(graphEdges[2 * i].x, graphEdges[2 * i].y);
 			vec2 endPoint(graphEdges[2 * i + 1].x, graphEdges[2 * i + 1].y);
 			lineStrip = LineStrip(startPoint, endPoint, vec3(1, 1, 0));
 			lineStrip.create();
-			lineStrip.Draw();
+			lineStrips.push_back(lineStrip);
 		}
 
-		for (int i = 0; i < numberOfVertices; i++) {
-			circles[i].Draw();
-		}
-
+		//------------Textúrázott négyzeteink létrehozása---------------
 		gpuProgramForTexturing.Use();
 		int width = 32, height = 32;				//ez bármekkora szám lehetne (minél nagyobb annál "hirtelenebb" lesz a színátmenet)
 		std::vector<vec4> image(width * height);
@@ -414,7 +398,35 @@ public:
 				}
 			}
 			TexturedQuad* quad = new TexturedQuad(vec2(graphVertices[k].x, graphVertices[k].y), width, height, image);
-			quad->Draw();
+			quads[k] = quad;
+		}
+		//------------!Textúrázott négyzeteink létrehozása---------------
+	}
+
+	float generateRandomFloatBetween(float from, float to) {
+		return from + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (to - from)));
+	}
+
+	void AddTranslation(vec2 wT) { 
+		for (int i = 0; i < numberOfVertices; i++) {
+			circles[i].AddTranslation(wT);
+		}
+	}
+
+	void Draw() {
+
+		gpuProgram.Use();
+		for (int i = 0; i < numberOfEdges; i++) {
+			lineStrips[i].Draw();
+		}
+
+		for (int i = 0; i < numberOfVertices; i++) {
+			circles[i].Draw();
+		}
+
+		gpuProgramForTexturing.Use();
+		for (int k = 0; k < numberOfVertices; k++) {
+			quads[k]->Draw();
 		}
 	}
 };
