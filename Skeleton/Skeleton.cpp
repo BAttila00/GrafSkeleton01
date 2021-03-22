@@ -335,7 +335,6 @@ const float fullness = 0.05f;			//a gráfunk lehetséges élei közül ennyi arányú a
 //ennyi él lesz ténylegesen berajzolva
 //numberOfVertices * (numberOfVertices - 1) / 2 * fullness;
 const int numberOfEdges = (50 * 49 / 2) * 0.05f;
-TexturedQuad* quad;
 
 class Graph {
 	GraphNode graphVertices[numberOfVertices];		// a gráfunk csúcspontjainak koordinátái
@@ -413,8 +412,8 @@ public:
 					image[i] = vec4(1.0f - k * steps*0.75f, 1.0f - k * steps, 0.0f + k * steps*0.9f, 1);
 				}
 			}
-			quad = new TexturedQuad(vec2(graphVertices[k].x, graphVertices[k].y), width, height, image);
-			quad->Draw();
+			TexturedQuad quad = TexturedQuad(vec2(graphVertices[k].x, graphVertices[k].y), width, height, image);
+			quad.Draw();
 		}
 
 	}
