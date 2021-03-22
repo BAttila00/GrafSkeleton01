@@ -509,6 +509,10 @@ public:
 			quads[k]->Draw();
 		}
 	}
+
+	void Animate(float sec) {
+
+	}
 };
 
 //Circle circle =  Circle(0.5f, 0.5f, vec3(0.0f, 1.0f, 0.0f));
@@ -552,8 +556,8 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 	if (key == 'd') glutPostRedisplay();         // if d, invalidate display, i.e. redraw
 												//ervenytelenitjuk az alkalmazoi ablakot -> ujrarajzolas
 
-	if (key == 'a') {
-		graph.AddTranslation(vec2(0.05f, 0.0f));
+	if (key == ' ') {
+		graph.AddTranslation(vec2(0.2f, 0.0f));
 		glutPostRedisplay();
 	}
 }
@@ -593,4 +597,6 @@ void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel co
 // Idle event indicating that some time elapsed: do animation here
 void onIdle() {
 	long time = glutGet(GLUT_ELAPSED_TIME); // elapsed time since the start of the program
+	float sec = time / 1000.0f;
+	//graph.Animate(sec);
 }
