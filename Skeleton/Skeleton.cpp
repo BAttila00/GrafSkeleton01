@@ -214,10 +214,22 @@ class LineStrip {
 	unsigned int vao, vbo;	   // virtual world on the GPU
 	float points[4]; //a szakaszunk kezdo és végpontja
 	vec3 color;
+	float sx, sy;		// skálázás
+	vec2 wTranslate;	// eltolás
+	float phi;			// forgatás szöge
 public:
-	LineStrip() { }
+	LineStrip() {
+		sx = 1.0f;
+		sy = 1.0f;
+		wTranslate = vec2(0.0f, 0.0f);
+		phi = 0.0f;
+	}
 
 	LineStrip(vec2 startPoint, vec2 endPoint, vec3 colorParam) {
+		sx = 1.0f;
+		sy = 1.0f;
+		wTranslate = vec2(0.0f, 0.0f);
+		phi = 0.0f;
 		color = colorParam;
 		points[0] = startPoint.x;
 		points[1] = startPoint.y;
@@ -246,13 +258,39 @@ public:
 			0, NULL); 		     // stride, offset: tightly packed
 	}
 
+	mat4 M() {
+		mat4 Mscale(sx, 0, 0, 0,
+			0, sy, 0, 0,
+			0, 0, 0, 0,
+			0, 0, 0, 1); // scaling
+
+		mat4 Mrotate(cosf(phi), sinf(phi), 0, 0,
+			-sinf(phi), cosf(phi), 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1); // rotation
+
+		mat4 Mtranslate(1, 0, 0, 0,
+			0, 1, 0, 0,
+			0, 0, 0, 0,
+			wTranslate.x, wTranslate.y, 0, 1); // translation
+
+		return Mscale * Mrotate * Mtranslate;	// model transformation
+	}
+
+	//eltolás
+	void AddTranslation(vec2 wT) { 
+		wTranslate = wTranslate + wT;
+	}
+
 	void Draw() {
 		gpuProgram.setUniform(color, "color");
 
-		mat4 MVPtransf(1, 0, 0, 0,
-			0, 1, 0, 0,
-			0, 0, 1, 0,
-			0, 0, 0, 1);
+		//mat4 MVPtransf(1, 0, 0, 0,
+		//	0, 1, 0, 0,
+		//	0, 0, 1, 0,
+		//	0, 0, 0, 1);
+
+		mat4 MVPtransf = M() * camera.V() * camera.P();
 		gpuProgram.setUniform(MVPtransf, "MVP");
 
 		glBindVertexArray(vao);  // Draw call
@@ -268,10 +306,22 @@ class TexturedQuad {
 	Texture texture;
 	const float size = 0.025;
 	vec2 midPoint;
+	float sx, sy;		// skálázás
+	vec2 wTranslate;	// eltolás
+	float phi;			// forgatás szöge
 public:
-	TexturedQuad() { }
+	TexturedQuad() {
+		sx = 1.0f;
+		sy = 1.0f;
+		wTranslate = vec2(0.0f, 0.0f);
+		phi = 0.0f;
+	}
 
 	TexturedQuad(vec2 midPointParam, int width, int height, const std::vector<vec4>& image) : texture(width, height, image) {
+		sx = 1.0f;
+		sy = 1.0f;
+		wTranslate = vec2(0.0f, 0.0f);
+		phi = 0.0f;
 		midPoint = midPointParam;
 		vertices[0] = vec2(midPoint.x - size, midPoint.y - size); uvs[0] = vec2(0, 0);
 		vertices[1] = vec2(midPoint.x + size, midPoint.y - size);  uvs[1] = vec2(1, 0);
@@ -296,12 +346,36 @@ public:
 		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, NULL);     // stride and offset: it is tightly packed		
 	}
 
+	mat4 M() {
+		mat4 Mscale(sx, 0, 0, 0,
+			0, sy, 0, 0,
+			0, 0, 0, 0,
+			0, 0, 0, 1); // scaling
+
+		mat4 Mrotate(cosf(phi), sinf(phi), 0, 0,
+			-sinf(phi), cosf(phi), 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1); // rotation
+
+		mat4 Mtranslate(1, 0, 0, 0,
+			0, 1, 0, 0,
+			0, 0, 0, 0,
+			wTranslate.x, wTranslate.y, 0, 1); // translation
+
+		return Mscale * Mrotate * Mtranslate;	// model transformation
+	}
+
+	//eltolás
+	void AddTranslation(vec2 wT) { wTranslate = wTranslate + wT; }
+
 	void Draw() {
 
-		mat4 MVPtransf(1, 0, 0, 0,
-			0, 1, 0, 0,
-			0, 0, 1, 0,
-			0, 0, 0, 1);
+		//mat4 MVPtransf(1, 0, 0, 0,
+		//	0, 1, 0, 0,
+		//	0, 0, 1, 0,
+		//	0, 0, 0, 1);
+
+		mat4 MVPtransf = M() * camera.V() * camera.P();
 		gpuProgramForTexturing.setUniform(MVPtransf, "MVP");
 		gpuProgramForTexturing.setUniform(texture, "textureUnit");
 
@@ -410,6 +484,12 @@ public:
 	void AddTranslation(vec2 wT) { 
 		for (int i = 0; i < numberOfVertices; i++) {
 			circles[i].AddTranslation(wT);
+		}
+		for (int i = 0; i < numberOfEdges; i++) {
+			lineStrips[i].AddTranslation(wT);
+		}
+		for (int i = 0; i < numberOfVertices; i++) {
+			quads[i]->AddTranslation(wT);
 		}
 	}
 
