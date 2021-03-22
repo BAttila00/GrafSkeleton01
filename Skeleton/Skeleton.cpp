@@ -340,6 +340,7 @@ class Graph {
 	GraphNode graphVertices[numberOfVertices];		// a gráfunk csúcspontjainak koordinátái
 	vec2 graphEdges[numberOfEdges * 2];						//a gráfunk élei, minden élhez 2 koordináta
 	std::vector<Circle> circles;
+	TexturedQuad* quads[numberOfVertices];
 public:
 	Graph() {
 		//generáljuk le a csúcspontokat
@@ -406,16 +407,15 @@ public:
 			//jobb oldaluk 1,1,0 (azaz sárga), ebbol megy át 0,0,1-be (azaz lila)
 			for (int i = 0; i < width * height; i++) {
 				if (i % height < (height / 2)) {
-					image[i] = vec4(1.0f - k * steps*0.8f, 0.0f + k * steps*0.6f, 0.0f + k * steps*0.7, 1);
+					image[i] = vec4(1.0f - k * steps * 0.8f, 0.0f + k * steps * 0.6f, 0.0f + k * steps * 0.7, 1);
 				}
 				else {
-					image[i] = vec4(1.0f - k * steps*0.75f, 1.0f - k * steps, 0.0f + k * steps*0.9f, 1);
+					image[i] = vec4(1.0f - k * steps * 0.75f, 1.0f - k * steps, 0.0f + k * steps * 0.9f, 1);
 				}
 			}
-			TexturedQuad quad = TexturedQuad(vec2(graphVertices[k].x, graphVertices[k].y), width, height, image);
-			quad.Draw();
+			TexturedQuad* quad = new TexturedQuad(vec2(graphVertices[k].x, graphVertices[k].y), width, height, image);
+			quad->Draw();
 		}
-
 	}
 };
 
