@@ -387,7 +387,7 @@ public:
 
 class GraphNode {
 	int id;
-	std::vector<int> adjacentNodes;
+	std::vector<GraphNode> adjacentNodes;
 public:
 	GraphNode() { }
 
@@ -398,8 +398,45 @@ public:
 		y = yParam;
 	}
 
-	void addAdjacentNode(int id) {
-		adjacentNodes.push_back(id);
+	void addAdjacentNode(GraphNode node) {
+		adjacentNodes.push_back(node);
+	}
+
+	bool isItConnectedToNode(int nodeNumber) {
+		for (size_t i = 0; i < adjacentNodes.size(); i++)
+		{
+			if (nodeNumber == adjacentNodes[i].getId())
+				return true;
+		}
+		return false;
+	}
+
+	int getId() {
+		return id;
+	}
+
+	/// <summary>
+	/// Kiszámolja egy adott csúc új helyét, a pont jelenlegi helye és szomszédai pozícióinak átlagolásával.
+	/// </summary>
+	/// <returns>A gráf csúcspontjának új koordinátái</returns>
+	vec2 updatePosition() {
+		float sumX = x, sumY = y;
+		int numberOfAdjacentNodes = adjacentNodes.size();
+		if (numberOfAdjacentNodes > 0) {
+			for (size_t i = 0; i < numberOfAdjacentNodes; i++)
+			{
+				sumX += adjacentNodes[i].x;
+				sumY += adjacentNodes[i].y;
+			}
+			vec2 newCoordinates = vec2(sumX / (numberOfAdjacentNodes + 1), sumY / (numberOfAdjacentNodes + 1));
+			x = newCoordinates.x;
+			y = newCoordinates.y;
+
+			return newCoordinates;
+		}
+		else {
+			return vec2(x, y);
+		}
 	}
 };
 
@@ -433,8 +470,8 @@ public:
 			graphEdges[i * 2].y = graphVertices[startPoint].y;
 			graphEdges[i * 2 + 1].x = graphVertices[endPoint].x;
 			graphEdges[i * 2 + 1].y = graphVertices[endPoint].y;
-			graphVertices[startPoint].addAdjacentNode(endPoint);
-			graphVertices[endPoint].addAdjacentNode(startPoint);
+			graphVertices[startPoint].addAdjacentNode(graphVertices[endPoint]);
+			graphVertices[endPoint].addAdjacentNode(graphVertices[startPoint]);
 		}
 	}
 
@@ -457,12 +494,11 @@ public:
 
 		//------------Textúrázott négyzeteink létrehozása---------------
 		gpuProgramForTexturing.Use();
+		//létre kell hoznunk egy textúrázott négyzet "mintát" -> image, ebbol fog a GPU mintavételezni, hogy a kirajzolt négyzet adott pixele milyen színü legyen
 		int width = 32, height = 32;				//ez bármekkora szám lehetne (minél nagyobb annál "hirtelenebb" lesz a színátmenet)
 		std::vector<vec4> image(width * height);
-		float steps = 1.0f / numberOfVertices;		//a textúra színeihez használjuk, ennyivel fogjuk változtatni a színek értékeit
 		for (int k = 0; k < numberOfVertices; k++) {
-			//bal oldaluk: 1,0,0 (azaz piros), ebböl megy át fokozatosan 0,1,1-be (azaz türkiz)
-			//jobb oldaluk 1,1,0 (azaz sárga), ebbol megy át 0,0,1-be (azaz lila)
+			//a négyzetünknek a bal és jobb oldala külön színü lesz, generáljuk le a színeket (2db)
 			float leftRed = (float)(rand() % 100) / 100.0f;
 			float leftGreen = (float)(rand() % 100) / 100.0f;
 			float leftBlue = (float)(rand() % 100) / 100.0f;
@@ -470,10 +506,10 @@ public:
 			float rightGreen = (float)(rand() % 100) / 100.0f;
 			float rightBlue = (float)(rand() % 100) / 100.0f;
 			for (int i = 0; i < width * height; i++) {
-				if (i % height < (height / 2)) {
+				if (i % height < (height / 2)) {		//a négyzetünk bal oldalát ilyen színüre fessük ki
 					image[i] = vec4(leftRed, leftGreen, leftBlue);
 				}
-				else {
+				else {									//a négyzetünk jobb oldalát, pedig olyan színüre
 					image[i] = vec4(rightRed, rightGreen, rightBlue);
 				}
 			}
@@ -519,6 +555,17 @@ public:
 	void Animate(float sec) {
 
 	}
+
+	/// <summary>
+	/// kiszámolja minden csúcs új pozícióját. Ez jelen esetben a szomszédos(összekötött) csúcsok átlaga lesz
+	/// </summary>
+	void recalculateNodePositions() {
+		for (size_t i = 0; i < numberOfVertices; i++){
+			vec2 newPosition = graphVertices[i].updatePosition();
+			circles[i] = Circle(newPosition.x, newPosition.y, vec3(0.0f, 1.0f, 0.0f));
+			circles[i].create();
+		}
+	}
 };
 
 //Circle circle =  Circle(0.5f, 0.5f, vec3(0.0f, 1.0f, 0.0f));
@@ -562,8 +609,13 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 	if (key == 'd') glutPostRedisplay();         // if d, invalidate display, i.e. redraw
 												//ervenytelenitjuk az alkalmazoi ablakot -> ujrarajzolas
 
-	if (key == ' ') {
+	if (key == 'a') {
 		graph.AddTranslation(vec2(0.2f, 0.0f));
+		glutPostRedisplay();
+	}
+
+	if (key == ' ') {
+		graph.recalculateNodePositions();
 		glutPostRedisplay();
 	}
 }
@@ -605,4 +657,8 @@ void onIdle() {
 	long time = glutGet(GLUT_ELAPSED_TIME); // elapsed time since the start of the program
 	float sec = time / 1000.0f;
 	//graph.Animate(sec);
+	//if (time % 1000 == 0) {
+	//	graph.recalculateNodePositions();
+	//	glutPostRedisplay();
+	//}
 }
