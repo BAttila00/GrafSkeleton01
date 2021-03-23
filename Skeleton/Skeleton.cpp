@@ -383,19 +383,37 @@ public:
 		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);	// draw two triangles forming a quad
 	}
 
+	void setMidpoint(vec2 midPointParam) {
+		midPoint = midPointParam;
+		vertices[0] = vec2(midPoint.x - size, midPoint.y - size);
+		vertices[1] = vec2(midPoint.x + size, midPoint.y - size);
+		vertices[2] = vec2(midPoint.x + size, midPoint.y + size);
+		vertices[3] = vec2(midPoint.x - size, midPoint.y + size);
+
+		glBindVertexArray(vao);		// make it active
+		// vertex coordinates: vbo[0] -> Attrib Array 0 -> vertexPosition of the vertex shader
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]); // make it active, it is an array
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, NULL);     // stride and offset: it is tightly packed
+	}
+
 };
 
 class GraphNode {
 	int id;
 	std::vector<GraphNode> adjacentNodes;
+	int width = 32, height = 32;
 public:
 	GraphNode() { }
 
+	std::vector<vec4> image;
 	float x, y;
 	GraphNode(int idParam, float xParam, float yParam) {
 		id = idParam;
 		x = xParam;
 		y = yParam;
+		std::vector<vec4> image(width * height);
 	}
 
 	void addAdjacentNode(GraphNode node) {
@@ -515,6 +533,8 @@ public:
 			}
 			TexturedQuad* quad = new TexturedQuad(vec2(graphVertices[k].x, graphVertices[k].y), width, height, image);
 			quads[k] = quad;
+
+			graphVertices[k].image = image;
 		}
 		//------------!Textúrázott négyzeteink létrehozása---------------
 	}
@@ -564,6 +584,8 @@ public:
 			vec2 newPosition = graphVertices[i].updatePosition();
 			circles[i] = Circle(newPosition.x, newPosition.y, vec3(0.0f, 1.0f, 0.0f));
 			circles[i].create();
+
+			quads[i]->setMidpoint(newPosition);
 		}
 	}
 };
