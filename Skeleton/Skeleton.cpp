@@ -463,12 +463,18 @@ public:
 		for (int k = 0; k < numberOfVertices; k++) {
 			//bal oldaluk: 1,0,0 (azaz piros), ebböl megy át fokozatosan 0,1,1-be (azaz türkiz)
 			//jobb oldaluk 1,1,0 (azaz sárga), ebbol megy át 0,0,1-be (azaz lila)
+			float leftRed = (float)(rand() % 100) / 100.0f;
+			float leftGreen = (float)(rand() % 100) / 100.0f;
+			float leftBlue = (float)(rand() % 100) / 100.0f;
+			float rightRed = (float)(rand() % 100) / 100.0f;
+			float rightGreen = (float)(rand() % 100) / 100.0f;
+			float rightBlue = (float)(rand() % 100) / 100.0f;
 			for (int i = 0; i < width * height; i++) {
 				if (i % height < (height / 2)) {
-					image[i] = vec4(1.0f - k * steps * 0.8f, 0.0f + k * steps * 0.6f, 0.0f + k * steps * 0.7, 1);
+					image[i] = vec4(leftRed, leftGreen, leftBlue);
 				}
 				else {
-					image[i] = vec4(1.0f - k * steps * 0.75f, 1.0f - k * steps, 0.0f + k * steps * 0.9f, 1);
+					image[i] = vec4(rightRed, rightGreen, rightBlue);
 				}
 			}
 			TexturedQuad* quad = new TexturedQuad(vec2(graphVertices[k].x, graphVertices[k].y), width, height, image);
