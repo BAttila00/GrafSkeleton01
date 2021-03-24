@@ -109,6 +109,8 @@ public:
 
 	void Zoom(float s) { wSize = wSize * s; }
 	void Pan(vec2 t) { wCenter = wCenter + t; }
+	void SetBasicZoom() { wSize = vec2(2, 2); }
+	void PanTo(vec2 t) { wCenter = t; }
 };
 
 Camera2D camera;		// 2D camera
@@ -698,8 +700,11 @@ void onMouseMotion(int pX, int pY) {	// pX, pY are the pixel coordinates of the 
 	// Convert to normalized device space
 	float cX = 2.0f * pX / windowWidth - 1;	// flip y axis
 	float cY = 1.0f - 2.0f * pY / windowHeight;
-	printf("Mouse moved to (%3.2f, %3.2f)\n", cX, cY);		//kiirja az egerop rendszer szerint rzekelt pixelkoordinatak mely normavizált koordinataknak felelnek meg (akkor lesz helyes ha az ablakunk a teljes kepernyot kitolti,
+	//printf("Mouse moved to (%3.2f, %3.2f)\n", cX, cY);		//kiirja az egerop rendszer szerint rzekelt pixelkoordinatak mely normavizált koordinataknak felelnek meg (akkor lesz helyes ha az ablakunk a teljes kepernyot kitolti,
 															//egyebkent kicsit bonyolultabb(pontosabban, ha a viewport teljesen lefedi az alkalmazoi ablakot))
+
+	camera.PanTo(vec2(cX, cY));
+	glutPostRedisplay();
 }
 
 // Mouse click event
@@ -710,8 +715,16 @@ void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel co
 
 	char* buttonStat;
 	switch (state) {
-	case GLUT_DOWN: buttonStat = "pressed"; break;
-	case GLUT_UP:   buttonStat = "released"; break;
+	case GLUT_DOWN: 
+		buttonStat = "pressed"; 
+		camera.Zoom(0.5f);
+		glutPostRedisplay();
+		break;
+	case GLUT_UP:   
+		buttonStat = "released"; 
+		camera.SetBasicZoom();
+		camera.PanTo(vec2(0, 0));
+		break;
 	}
 
 	switch (button) {
