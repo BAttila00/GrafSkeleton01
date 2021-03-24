@@ -218,6 +218,8 @@ class LineStrip {
 	vec2 wTranslate;	// eltolás
 	float phi;			// forgatás szöge
 public:
+
+	int startNodeId, endNodeId;
 	LineStrip() {
 		sx = 1.0f;
 		sy = 1.0f;
@@ -295,6 +297,30 @@ public:
 
 		glBindVertexArray(vao);  // Draw call
 		glDrawArrays(GL_LINE_STRIP, 0 /*startIdx*/, 2 /*# Elements*/);		//2 pontunk lesz amit össze kell kötni
+	}
+
+	void setPoints(vec2 startCoordinates, vec2 endCoordinates) {
+
+		points[0] = startCoordinates.x;
+		points[1] = startCoordinates.y;
+		points[2] = endCoordinates.x;
+		points[3] = endCoordinates.y;
+
+		glBindVertexArray(vao);		// make it active
+
+
+		//unsigned int vbo;
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+		glBufferData(GL_ARRAY_BUFFER, 	// Copy to GPU target
+			sizeof(points),  // # bytes
+			points,	      	// address
+			GL_STATIC_DRAW);	// we do not change later
+
+		glEnableVertexAttribArray(0);  // AttribArray 0
+		glVertexAttribPointer(0,       // vbo -> AttribArray 0
+			2, GL_FLOAT, GL_FALSE, // two floats/attrib, not fixed-point	//egy ponthoz 2 float tartozik
+			0, NULL); 		     // stride, offset: tightly packed
 	}
 
 
@@ -467,7 +493,7 @@ const int numberOfEdges = (50 * 49 / 2) * 0.05f;
 
 class Graph {
 	GraphNode graphVertices[numberOfVertices];		// a gráfunk csúcspontjainak koordinátái
-	vec2 graphEdges[numberOfEdges * 2];						//a gráfunk élei, minden élhez 2 koordináta
+	int graphEdges[numberOfEdges * 2];						//(a gráfunk élei, minden élhez 2 koordináta) helyett minden élhez 2 csúcspontId
 	std::vector<Circle> circles;
 	std::vector<LineStrip> lineStrips;
 	TexturedQuad* quads[numberOfVertices];
@@ -484,10 +510,12 @@ public:
 		for (int i = 0; i < numberOfEdges; i++) {
 			int startPoint = rand() % numberOfVertices;
 			int endPoint = rand() % numberOfVertices;
-			graphEdges[i * 2].x = graphVertices[startPoint].x;
-			graphEdges[i * 2].y = graphVertices[startPoint].y;
-			graphEdges[i * 2 + 1].x = graphVertices[endPoint].x;
-			graphEdges[i * 2 + 1].y = graphVertices[endPoint].y;
+			//graphEdges[i * 2].x = graphVertices[startPoint].x;
+			//graphEdges[i * 2].y = graphVertices[startPoint].y;
+			//graphEdges[i * 2 + 1].x = graphVertices[endPoint].x;
+			//graphEdges[i * 2 + 1].y = graphVertices[endPoint].y;
+			graphEdges[i * 2] = startPoint;
+			graphEdges[i * 2 + 1] = endPoint;
 			graphVertices[startPoint].addAdjacentNode(graphVertices[endPoint]);
 			graphVertices[endPoint].addAdjacentNode(graphVertices[startPoint]);
 		}
@@ -503,10 +531,14 @@ public:
 
 		LineStrip lineStrip;		//élek létrehozása
 		for (int i = 0; i < numberOfEdges; i++) {
-			vec2 startPoint(graphEdges[2 * i].x, graphEdges[2 * i].y);
-			vec2 endPoint(graphEdges[2 * i + 1].x, graphEdges[2 * i + 1].y);
+			int startPointId = graphEdges[2 * i];
+			int endPointId = graphEdges[2 * i + 1];
+			vec2 startPoint(graphVertices[startPointId].x, graphVertices[startPointId].y);
+			vec2 endPoint(graphVertices[endPointId].x, graphVertices[endPointId].y);
 			lineStrip = LineStrip(startPoint, endPoint, vec3(1, 1, 0));
 			lineStrip.create();
+			lineStrip.startNodeId = startPointId;
+			lineStrip.endNodeId = endPointId;
 			lineStrips.push_back(lineStrip);
 		}
 
@@ -580,12 +612,27 @@ public:
 	/// kiszámolja minden csúcs új pozícióját. Ez jelen esetben a szomszédos(összekötött) csúcsok átlaga lesz
 	/// </summary>
 	void recalculateNodePositions() {
-		for (size_t i = 0; i < numberOfVertices; i++){
-			vec2 newPosition = graphVertices[i].updatePosition();
-			circles[i] = Circle(newPosition.x, newPosition.y, vec3(0.0f, 1.0f, 0.0f));
-			circles[i].create();
+		for (size_t j = 0; j < 5; j++)
+		{
+			for (size_t i = 0; i < numberOfVertices; i++) {
+				vec2 newPosition = graphVertices[i].updatePosition();
+				circles[i] = Circle(newPosition.x, newPosition.y, vec3(0.0f, 1.0f, 0.0f));
+				circles[i].create();
 
-			quads[i]->setMidpoint(newPosition);
+				quads[i]->setMidpoint(newPosition);
+			}
+			recalculateEdges();
+		}
+	}
+
+	void recalculateEdges() {
+		for (size_t i = 0; i < lineStrips.size(); i++)
+		{
+			int startNodeId = lineStrips[i].startNodeId;
+			int endNodeId = lineStrips[i].endNodeId;
+			vec2 startNodePosition = vec2(graphVertices[startNodeId].x, graphVertices[startNodeId].y);
+			vec2 endNodePosition = vec2(graphVertices[endNodeId].x, graphVertices[endNodeId].y);
+			lineStrips[i].setPoints(startNodePosition, endNodePosition);
 		}
 	}
 };
@@ -678,9 +725,4 @@ void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel co
 void onIdle() {
 	long time = glutGet(GLUT_ELAPSED_TIME); // elapsed time since the start of the program
 	float sec = time / 1000.0f;
-	//graph.Animate(sec);
-	//if (time % 1000 == 0) {
-	//	graph.recalculateNodePositions();
-	//	glutPostRedisplay();
-	//}
 }
