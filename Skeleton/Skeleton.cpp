@@ -484,6 +484,15 @@ public:
 			return vec2(x, y);
 		}
 	}
+
+	float getDistanceFromPoint(vec2 otherPoint) {
+		return length(otherPoint - vec2(x, y));
+	}
+
+	void setPosition(vec2 newPosition) {
+		x = newPosition.x;
+		y = newPosition.y;
+	}
 };
 
 const int numberOfVertices = 50;		//a gráfunk csúcspontjainak száma
@@ -637,6 +646,54 @@ public:
 			lineStrips[i].setPoints(startNodePosition, endNodePosition);
 		}
 	}
+
+	/// <summary>
+	/// erövektorokkal lépteti a pontjainkat
+	/// </summary>
+	void recalculateNodePositionsWithForces() {
+		float idealDistance = 0.1f;
+		vec2 forces[numberOfVertices];		//adott pontjainkra ható erök szummája. Minden ponthoz egy erövektor tartozik ami több kisebb(forceTemp) eröböl áll össze
+		vec2 force(0.0f, 0.0f);				//egy adott pontra ható erök(forceTemp-ek) szummája
+		vec2 forceTemp(0.0f, 0.0f);			//egy adott pontra ható erö egy másik pont álltal
+		for (size_t i = 0; i < numberOfVertices; i++) {		//minden pontra kiszámoljuk a rájuk ható erök szummáját(force)
+			force = vec2(0.0f, 0.0f);
+			for (size_t j = 0; j < numberOfVertices; j++) {	//egy adott ponthoz megnézünk minden más pontot és kiszámoljuk h azon másik pont vonza vagy taszítja és mekkora erövel
+				vec2 thisPoint = vec2(graphVertices[i].x, graphVertices[i].y);
+				vec2 otherPoint = vec2(graphVertices[j].x, graphVertices[j].y);
+				float distance = graphVertices[i].getDistanceFromPoint(otherPoint);
+				forceTemp = vec2(0.0f, 0.0f);				//a másik pont ekkora erövel hat a jelenlegi pontunkra
+				if (graphVertices[i].isItConnectedToNode(j)) {	//ha a jelenlegi pontunk össze van kövte a másik pontunkkal...
+					float multiplier = distance - idealDistance;   //ha a jelenlegi távolság kisebb mint az ideális távolság akkor taszító erö kell lépjen fel
+																	// -> így multiplier negatív lesz
+					forceTemp = multiplier * (otherPoint - thisPoint);  //otherPoint - thisPoint -> ezen vektor otherPoint fele mutat, így ez olyan hatással lesz thisPoint-ra, 
+																		//mintha a másik pont volnzaná. Így ha multiplier negatív a másik pont taszítani fogja az adott pontunkat (thispoint)
+				}
+				else {											// ha a két pont nincs összekötve...
+					if (distance != 0) {
+						forceTemp = -(1.0f / distance) * 0.025f * (otherPoint - thisPoint);		//az adott pontunkra ható erö mindig negatív
+					}
+					else {
+						forceTemp = vec2(0, 0);		//mivel nullával nem osztunk így ez kell ide. meg egyébként is, ha nulla a távolság akkor nem fog hatni erö az adott pontra
+					}
+				}
+				force = force + forceTemp;
+			}
+			forces[i] = force;
+		}
+
+		//itt kiszámoljuk az adott pontokra ható erök(vektorok) alapján a pont új helyét,
+		//majd ezután kirajzoljuk oda a köröket, beállítjuk a hozzájuk tartozó textúrázott négyzetek középpontját és frissítjük a gráf éleinek helyzetét
+		//kb ugyanúgy mint recalculateNodePositions() fv-ben
+		for (size_t i = 0; i < numberOfVertices; i++) {
+			vec2 newPosition = vec2(graphVertices[i].x, graphVertices[i].y) + forces[i] * 0.1f;
+			graphVertices[i].setPosition(newPosition);
+			circles[i] = Circle(newPosition.x, newPosition.y, vec3(0.0f, 1.0f, 0.0f));
+			circles[i].create();
+
+			quads[i]->setMidpoint(newPosition);
+		}
+		recalculateEdges();
+	}
 };
 
 //Circle circle =  Circle(0.5f, 0.5f, vec3(0.0f, 1.0f, 0.0f));
@@ -675,6 +732,8 @@ void onDisplay() {
 	glutSwapBuffers(); // exchange buffers for double buffering
 }
 
+bool start = false;
+
 // Key of ASCII code pressed
 void onKeyboard(unsigned char key, int pX, int pY) {
 	if (key == 'd') glutPostRedisplay();         // if d, invalidate display, i.e. redraw
@@ -686,7 +745,32 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 	}
 
 	if (key == ' ') {
+		for (size_t i = 0; i < 120; i++)
+		{
+			graph.recalculateNodePositionsWithForces();
+		}
+		camera.Zoom(4.2f);
+		glutPostRedisplay();
+
+		//csinálhatjuk úgy is h itt csak elkezdjük az animációt és onIdle-ben léptetünk, azaz adott idönként lefuttatjuk a recalculateNodePositionsWithForces()-et
+		//start = true;
+	}
+
+	if (key == 'f') {
 		graph.recalculateNodePositions();
+	}
+
+	if (key == 'm') {
+		graph.recalculateNodePositionsWithForces();
+		glutPostRedisplay();
+	}
+
+	if (key == 'h') {
+		camera.Zoom(2.0f);
+		glutPostRedisplay();
+	}
+	if (key == 'z') {
+		camera.Zoom(0.5f);
 		glutPostRedisplay();
 	}
 }
@@ -717,13 +801,15 @@ void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel co
 	switch (state) {
 	case GLUT_DOWN: 
 		buttonStat = "pressed"; 
-		camera.Zoom(0.5f);
+		//camera.SetBasicZoom();
+		camera.PanTo(vec2(0, 0));
+		camera.Zoom(0.4f);
 		glutPostRedisplay();
 		break;
 	case GLUT_UP:   
 		buttonStat = "released"; 
-		camera.SetBasicZoom();
-		camera.PanTo(vec2(0, 0));
+		//camera.SetBasicZoom();
+		//camera.PanTo(vec2(0, 0));
 		break;
 	}
 
@@ -734,8 +820,21 @@ void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel co
 	}
 }
 
+int count = 0;
+
 // Idle event indicating that some time elapsed: do animation here
 void onIdle() {
 	long time = glutGet(GLUT_ELAPSED_TIME); // elapsed time since the start of the program
 	float sec = time / 1000.0f;
+	////csinálhatjuk folyamatos animációval is a gráf pontjainak arrébb mozgatását
+	//if (count < 90 && start) {
+	//	graph.recalculateNodePositionsWithForces();
+	//	glutPostRedisplay();
+	//	count++;
+	//}
+
+	//if (count == 90) {
+	//	camera.Zoom(4.2f);
+	//	count++;
+	//}
 }
