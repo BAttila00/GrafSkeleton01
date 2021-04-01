@@ -801,15 +801,15 @@ void onMouse(int button, int state, int pX, int pY) { // pX, pY are the pixel co
 	switch (state) {
 	case GLUT_DOWN: 
 		buttonStat = "pressed"; 
-		//camera.SetBasicZoom();
+		camera.SetBasicZoom();
 		camera.PanTo(vec2(0, 0));
 		camera.Zoom(0.4f);
 		glutPostRedisplay();
 		break;
 	case GLUT_UP:   
 		buttonStat = "released"; 
-		//camera.SetBasicZoom();
-		//camera.PanTo(vec2(0, 0));
+		camera.SetBasicZoom();
+		camera.PanTo(vec2(0, 0));
 		break;
 	}
 
